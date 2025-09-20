@@ -19,6 +19,7 @@ use chrono::{DateTime, Utc};
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Integration {
     pub id: String,
+    pub user_id: String,  // Add user association
     pub name: String,
     pub system_type: SystemType,
     pub api_key: String,
@@ -122,13 +123,14 @@ impl IntegrationManager {
         }
     }
 
-    /// Create a new integration
-    pub async fn create_integration(&self, request: CreateIntegrationRequest) -> Result<Integration, String> {
+    /// Create a new integration for a specific user
+    pub async fn create_user_integration(&self, user_id: &str, request: CreateIntegrationRequest) -> Result<Integration, String> {
         let integration_id = Uuid::new_v4().to_string();
-        let api_key = format!("json_oracle_{}", Uuid::new_v4().to_string().replace("-", ""));
+        let api_key = format!("json_oracle_{}_{}", user_id, Uuid::new_v4().to_string().replace("-", ""));
         
         let integration = Integration {
             id: integration_id.clone(),
+            user_id: user_id.to_string(),
             name: request.name,
             system_type: request.system_type,
             api_key,
@@ -159,6 +161,69 @@ impl IntegrationManager {
     pub async fn get_integration_by_api_key(&self, api_key: &str) -> Option<Integration> {
         let integrations = self.integrations.read().await;
         integrations.values().find(|i| i.api_key == api_key).cloned()
+    }
+
+    /// Get integrations for a specific user
+    pub async fn get_user_integrations(&self, user_id: &str) -> Vec<Integration> {
+        let integrations = self.integrations.read().await;
+        integrations
+            .values()
+            .filter(|integration| integration.user_id == user_id)
+            .cloned()
+            .collect()
+    }
+
+    /// Get user-specific dashboard statistics
+    pub async fn get_user_dashboard_stats(&self, user_id: &str) -> serde_json::Value {
+        let integrations = self.integrations.read().await;
+        let results = self.analysis_results.read().await;
+
+        let user_integrations: Vec<_> = integrations
+            .values()
+            .filter(|i| i.user_id == user_id)
+            .collect();
+
+        let total_integrations = user_integrations.len();
+        let active_integrations = user_integrations
+            .iter()
+            .filter(|i| matches!(i.status, IntegrationStatus::Active))
+            .count();
+
+        let user_integration_ids: Vec<_> = user_integrations
+            .iter()
+            .map(|i| i.id.as_str())
+            .collect();
+
+        let total_analyses: usize = results
+            .iter()
+            .filter(|(id, _)| user_integration_ids.contains(&id.as_str()))
+            .map(|(_, analyses)| analyses.len())
+            .sum();
+
+        let successful_analyses: usize = results
+            .iter()
+            .filter(|(id, _)| user_integration_ids.contains(&id.as_str()))
+            .flat_map(|(_, analyses)| analyses.iter())
+            .filter(|r| matches!(r.status, AnalysisStatus::Completed))
+            .count();
+
+        let recent_analyses: usize = results
+            .iter()
+            .filter(|(id, _)| user_integration_ids.contains(&id.as_str()))
+            .flat_map(|(_, analyses)| analyses.iter())
+            .filter(|r| r.created_at > Utc::now() - chrono::Duration::hours(24))
+            .count();
+
+        serde_json::json!({
+            "total_integrations": total_integrations,
+            "active_integrations": active_integrations,
+            "total_analyses": total_analyses,
+            "successful_analyses": successful_analyses,
+            "recent_analyses_24h": recent_analyses,
+            "success_rate": if total_analyses > 0 { successful_analyses as f64 / total_analyses as f64 } else { 0.0 },
+            "api_calls_today": recent_analyses,
+            "storage_used": "2.3 MB" // Mock data for now
+        })
     }
 
     /// List all integrations

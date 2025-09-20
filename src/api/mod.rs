@@ -6,5 +6,8 @@ pub mod api_server;
 pub mod core_handlers;
 pub mod domains;
 pub mod prompts;
+pub mod integration_manager;
+pub mod auth;
+pub mod user_handlers;
 
 pub use api_server::start_api_server; 
