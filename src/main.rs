@@ -20,7 +20,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     log::info!("🚀 Starting AI JSON Analysis API on port {}", port);
     
     // Start the API server
-    api::start_api_server(port).await?;
+    ai_json_analysis_api::api::start_api_server(port).await?;
     
     Ok(())
 }

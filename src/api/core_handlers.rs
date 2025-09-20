@@ -286,8 +286,8 @@ pub async fn ollama_process_json(
     let file_path_str_clone = file_path_str.clone(); // Clone for closure
     
     // Get file content and config in parallel using ultra-fast threading
-    let (file_content_result, config_result) = tokio::join!(
-        spawn_blocking(move || std::fs::read_to_string(&file_path_str_clone)),
+      let (file_content_result, config_result): (Result<Result<String, std::io::Error>, _>, Result<Result<Config, _>, _>) = tokio::join!(
+        spawn_blocking(move || std::fs::read_to_string(&file_path_str_clone)),     
         spawn_blocking(|| Config::from_env())
     );
     

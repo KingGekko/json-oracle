@@ -1,6 +1,6 @@
 //! Flexible prompt builder system for multi-domain AI analysis
 
-use crate::api::domains::{Domain, AnalysisType, OutputFormat, MultiDomainAnalysisRequest, DomainRegistry};
+use crate::api::domains::{Domain, AnalysisType, OutputFormat, MultiDomainAnalysisRequest, DomainRegistry, ProcessingPriority};
 use serde_json::Value;
 use std::collections::HashMap;
 
@@ -109,10 +109,10 @@ Provide clear, actionable analysis.".to_string()
         if let Some(priority) = &request.priority {
             enhanced.push_str(&format!("\n\nPRIORITY LEVEL: {}", format!("{:?}", priority).to_uppercase()));
             match priority {
-                crate::domain_types::ProcessingPriority::Critical => {
+                ProcessingPriority::Critical => {
                     enhanced.push_str("\nThis is a CRITICAL analysis. Provide immediate, actionable insights.");
                 }
-                crate::domain_types::ProcessingPriority::High => {
+                ProcessingPriority::High => {
                     enhanced.push_str("\nThis is a HIGH priority analysis. Focus on the most important insights.");
                 }
                 _ => {}

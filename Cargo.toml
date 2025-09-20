@@ -21,6 +21,7 @@ dotenv = "0.15"
 anyhow = "1.0"
 tower = "0.4"
 tower-http = { version = "0.5", features = ["cors", "trace"] }
+url = "2.5"
 
 [profile.release]
 opt-level = 3
