@@ -1,0 +1,14 @@
+[build]
+builder = "dockerfile"
+dockerfilePath = "Dockerfile"
+
+[deploy]
+startCommand = "ai-json-analysis-api"
+restartPolicyType = "on_failure"
+restartPolicyMaxRetries = 10
+
+[environments.production]
+variables = { RUST_LOG = "info", PORT = "3000" }
+
+[environments.staging]
+variables = { RUST_LOG = "debug", PORT = "3000" }

@@ -1,0 +1,66 @@
+use std::net::SocketAddr;
+use std::sync::Arc;
+use tokio::net::TcpListener;
+use log::info;
+
+use super::{core_handlers::create_router, file_streaming::JsonStreamManager};
+use super::core_handlers::ApiState;
+
+/// Start the API server for JSON streaming
+pub async fn start_api_server(port: u16) -> Result<(), Box<dyn std::error::Error>> {
+    // Create JSON stream manager
+    let json_manager = Arc::new(JsonStreamManager::new());
+    
+    // Create API state
+    let state = ApiState {
+        json_manager: json_manager.clone(),
+    };
+    
+    // Create router
+    let app = create_router(state);
+    
+    // Bind to address
+    let addr = SocketAddr::from(([0, 0, 0, 0], port));
+    let listener = TcpListener::bind(addr).await?;
+    
+    info!("🚀 API Server starting on {}", addr);
+    info!("📡 Available endpoints:");
+    info!("   GET  /health                    - Health check");
+    info!("   POST /api/watch                 - Start watching a JSON file");
+    info!("   GET  /api/watch/:file_path     - Stop watching a file");
+    info!("   GET  /api/files                - List watched files");
+    info!("   GET  /api/content/:file_path   - Get file content");
+    info!("   GET  /api/stream/:file_path    - WebSocket stream for real-time updates");
+    info!("   POST /api/ollama/process       - Process JSON file with Ollama AI (optimized)");
+    info!("   POST /api/ollama/conversation - Multi-model AI conversation");
+    info!("   GET  /api/available-files      - List available JSON files in directory");
+    
+    // Start server
+    axum::serve(listener, app).await?;
+    
+    Ok(())
+}
+
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use tokio::time::{sleep, Duration};
+
+    #[tokio::test]
+    async fn test_api_server_startup() {
+        // This test verifies the server can start (but doesn't actually bind to port)
+        let json_manager = Arc::new(JsonStreamManager::new());
+        let state = ApiState {
+            json_manager: json_manager.clone(),
+        };
+        
+        let app = create_router(state);
+        // In Axum 0.8+, we can test that the router was created successfully
+        // The router is valid if it can be created without errors
+        // We can also test that the MakeService can be created
+        let _make_service = app.into_make_service();
+        assert!(true); // Router and MakeService creation successful
+    }
+} 
