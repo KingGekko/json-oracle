@@ -1,0 +1,3 @@
+[submodule "bolt_ui"]
+	path = bolt_ui
+	url = https://github.com/KingGekko/bolt_ui.git
